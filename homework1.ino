@@ -21,9 +21,15 @@ unsigned char blueLedValue;
 
 
 void setup() {
+
   pinMode(redLedPin, OUTPUT);
   pinMode(greenLedPin, OUTPUT);
   pinMode(blueLedPin, OUTPUT);
+
+  pinMode(redPotPin, INPUT);
+  pinMode(greenPotPin, INPUT);
+  pinMode(bluePotPin, INPUT);
+  
 }
 
 void loop() {
@@ -39,4 +45,5 @@ void loop() {
   analogWrite(redLedPin, redLedValue);
   analogWrite(greenLedPin, greenLedValue);
   analogWrite(blueLedPin, blueLedValue);
+
 }
