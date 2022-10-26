@@ -6,7 +6,7 @@
 <hr>
 
 ## Homework #1
-#### Use 3 potentiometers to digitally control a RGB led. 💡
+#### Use 3 potentiometers to digitally control a RGB led💡. Each one should control one of the color of the RGB led (Red, Green and Blue).
 
 <br>
 
