@@ -1,8 +1,8 @@
-#define CARS_CROSSING 1
-#define WAITING_FOR_LIGHT_SWITCH 2
-#define CAR_YELLOW_ON 3
-#define PEDESTRIANS_CROSSING 4
-#define GREEN_BLINKING 5
+#define CARS_CROSSING_STATE 1
+#define WAITING_FOR_LIGHT_SWITCH_STATE 2
+#define CAR_YELLOW_ON_STATE 3
+#define PEDESTRIANS_CROSSING_STATE 4
+#define GREEN_BLINKING_STATE 5
 
 #define DURATION_UNTILL_SWITCH 8000
 #define YELLOW_LIGHT_DURATION 3000
@@ -59,12 +59,14 @@ void setup() {
 
   pinMode(redPedestrianLedPin, OUTPUT);
   pinMode(greenPedestrianLedPin, OUTPUT);
+
+  attachInterrupt(digitalPinToInterrupt(buttonPin), buttonIsPressed, CHANGE);
+
   Serial.begin(9600);
 }
 
-byte getButtonState() {
 
-  byte reading = digitalRead(buttonPin);
+byte getButtonState() {
 
   if (reading != lastReading) {
     lastDebounceTime = millis();
@@ -79,6 +81,7 @@ byte getButtonState() {
   return buttonState;
 }
 
+
 void setLights(byte carRedState, byte carYellowState, byte carGreenState, byte pedestrianRedState, byte pedestrianGreenState) {
 
   digitalWrite(redCarLedPin, carRedState);
@@ -90,6 +93,7 @@ void setLights(byte carRedState, byte carYellowState, byte carGreenState, byte p
 
 }
 
+
 void setSounds(int beepDuration) {
   if ((millis() - timeSinceLastBeep) > beepDuration) {
     timeSinceLastBeep = millis();
@@ -100,6 +104,7 @@ void setSounds(int beepDuration) {
   else
     tone(buzzerPin, 1000);
 }
+
 
 void blinkPedestrianGreen() {
 
@@ -116,50 +121,55 @@ void loop() {
 
   switch (currentState) {
 
-    case CARS_CROSSING:
+    case CARS_CROSSING_STATE:
       setLights(LOW, LOW, HIGH, HIGH, LOW);
       buttonState = getButtonState();
       buttonValue = !buttonState;
       if (buttonValue == HIGH) {
-        currentState = WAITING_FOR_LIGHT_SWITCH;
+        currentState = WAITING_FOR_LIGHT_SWITCH_STATE;
         timeSincePressing = millis();
       }
       break;
 
-    case WAITING_FOR_LIGHT_SWITCH:
+    case WAITING_FOR_LIGHT_SWITCH_STATE:
       setLights(LOW, LOW, HIGH, HIGH, LOW);
       if ((millis() - timeSincePressing) == DURATION_UNTILL_SWITCH) {
-        currentState = CAR_YELLOW_ON;
+        currentState = CAR_YELLOW_ON_STATE;
         timeSinceYellow = millis();
       }
       break;
 
-    case CAR_YELLOW_ON:
+    case CAR_YELLOW_ON_STATE:
       setLights(LOW, HIGH, LOW, HIGH, LOW);
       if ((millis() - timeSinceYellow) == YELLOW_LIGHT_DURATION) {
-        currentState = PEDESTRIANS_CROSSING;
+        currentState = PEDESTRIANS_CROSSING_STATE;
         timeSincePedestriansGreen = millis();
       }
       break;
 
-    case PEDESTRIANS_CROSSING:
+    case PEDESTRIANS_CROSSING_STATE:
       setLights(HIGH, LOW, LOW, LOW, HIGH);
       setSounds(GREEN_BEEP_DURATION);
       if ((millis() - timeSincePedestriansGreen) == PEDESTRIANS_CROSSING_DURATION) {
-        currentState = GREEN_BLINKING;
+        currentState = GREEN_BLINKING_STATE;
         timeSinceGreenBlinking = millis();
       }
       break;
 
-    case GREEN_BLINKING:
+    case GREEN_BLINKING_STATE:
       setLights(HIGH, LOW, LOW, LOW, LOW);
       blinkPedestrianGreen();
       setSounds(BLINKING_GREEN_BEEP_DURATION);
       if ((millis() - timeSinceGreenBlinking) == GREEN_LIGHT_BLINKING_DURATION) {
-        currentState = CARS_CROSSING;
+        currentState = CARS_CROSSING_STATE;
+        reading = HIGH;
         buttonState = HIGH;
         buttonValue = LOW;
       }
       break;
   }
+}
+
+void buttonIsPressed() {
+  reading = !reading;
 }
