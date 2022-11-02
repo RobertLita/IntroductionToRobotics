@@ -12,6 +12,8 @@
 #define BLINKING_GREEN_BEEP_DURATION 500
 #define BLINKING_GREEN_LED_INTERVAL 500
 
+#define BUZZER_NOTE 1000 
+
 const int buttonPin = 2;
 const int buzzerPin = 9;
 
@@ -38,6 +40,7 @@ byte lastReading = HIGH;
 
 unsigned long lastDebounceTime = 0;
 const int debounceDelay = 50;
+const int buzzerNo
 
 unsigned long timeSincePressing = 0;
 unsigned long timeSinceYellow = 0;
@@ -66,6 +69,18 @@ void setup() {
 }
 
 
+void setLights(byte carRedState, byte carYellowState, byte carGreenState, byte pedestrianRedState, byte pedestrianGreenState) {
+
+  digitalWrite(redCarLedPin, carRedState);
+  digitalWrite(yellowCarLedPin, carYellowState);
+  digitalWrite(greenCarLedPin, carGreenState);
+
+  digitalWrite(redPedestrianLedPin, pedestrianRedState);
+  digitalWrite(greenPedestrianLedPin, pedestrianGreenState);
+
+}
+
+
 byte getButtonState() {
 
   if (reading != lastReading) {
@@ -82,27 +97,16 @@ byte getButtonState() {
 }
 
 
-void setLights(byte carRedState, byte carYellowState, byte carGreenState, byte pedestrianRedState, byte pedestrianGreenState) {
-
-  digitalWrite(redCarLedPin, carRedState);
-  digitalWrite(yellowCarLedPin, carYellowState);
-  digitalWrite(greenCarLedPin, carGreenState);
-
-  digitalWrite(redPedestrianLedPin, pedestrianRedState);
-  digitalWrite(greenPedestrianLedPin, pedestrianGreenState);
-
-}
-
-
 void setSounds(int beepDuration) {
   if ((millis() - timeSinceLastBeep) > beepDuration) {
     timeSinceLastBeep = millis();
     buzzerState = !buzzerState;
   }
+  
   if (buzzerState == LOW)
     noTone(buzzerPin);
   else
-    tone(buzzerPin, 1000);
+    tone(buzzerPin, BUZZER_NOTE);
 }
 
 
