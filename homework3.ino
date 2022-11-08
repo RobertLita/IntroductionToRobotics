@@ -1,8 +1,18 @@
-#define BLINKING_TIME 400
+#define BLINKING_TIME 500
+#define LONG_PRESS_DURATION 3000
+
+#define NO_PRESS 0
+#define LONG_PRESS 1
+#define SHORT_PRESS 2
+
+#define LED_MOVING 1
+#define LED_LOCKED_IN 2
+
 #define UP 0
 #define DOWN 1
 #define LEFT 2
 #define RIGHT 3
+#define NA -1
 
 const int debounceDelay = 50;
 
@@ -24,62 +34,56 @@ const int pinSW = 2;
 const int pinX = A0;
 const int pinY = A1;
 
-int index = 0;
-
 unsigned long lastBlinkTime = 0;
-
+unsigned long pressingTime = 0;
 unsigned long lastDebounceTime;
 
 int xJoyState, yJoyState = 0;
+int xValue, yValue = 500;
+bool joyMoved = false;
 
-int currentLedPin = 1;
+int currentLedPin = pinA;
 byte currentLedState = LOW;
 
-byte buttonState = LOW;
-byte buttonValue = HIGH;
-
+byte buttonState = HIGH;
 byte reading = HIGH;
 byte lastReading = HIGH;
+int buttonAction = NO_PRESS;
 
-int xValue, yValue = 500;
+int currentState = 1;
 
-bool joyMoved = false;
 
 int segments[segSize] = {
   pinA, pinB, pinC, pinD, pinE, pinF, pinG, pinDP
 };
 
-int displayLedStates[] = {LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW};
+byte displayLedStates[] = { LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW };
 
 const int pinToGo[][4] = {
-  { -1, 6, 5, 1 },
-  { 0, 6, 5, -1 },
-  { 5, 3, 4, 7 },
-  { 5, -1, 4, 2 },
-  { 5, 3, -1, 2 },
-  { 0, 6, -1, 1 },
-  { 0, 3, -1, -1 },
-  { -1, -1, 2, -1 }
+  {},
+  {},
+  {},
+  {},
+  { NA, pinG, pinF, pinB },
+  { pinA, pinG, pinF, NA },
+  { pinG, pinD, pinE, pinDP },
+  { pinG, NA, pinE, pinC },
+  { pinG, pinD, NA, pinC },
+  { pinA, pinG, NA, pinB },
+  { pinA, pinD, NA, NA },
+  { NA, NA, pinC, NA }
 };
 
-byte getButtonState() {
 
-  reading = digitalRead(pinSW);
-  if (reading != lastReading) {
-    lastDebounceTime = millis();
+void setup() {
+
+  for (int i = 0; i < segSize; i++) {
+    pinMode(segments[i], OUTPUT);
   }
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (buttonState != reading)
-      buttonState = reading;
-      if (buttonState == LOW) {
-        currentLedState = !currentLedState;
-      }
-  }
-
-  lastReading = reading;
-
-  return buttonState;
+  pinMode(pinSW, INPUT_PULLUP);
+  Serial.begin(9600);
 }
+
 
 void getjoyState() {
   xValue = analogRead(pinX);
@@ -90,69 +94,130 @@ void getjoyState() {
 
   if (stillMinThreshold <= xValue && xValue <= stillMaxThreshold && stillMinThreshold <= yValue && yValue <= stillMaxThreshold) {
     joyMoved = false;
-
   }
 
   if (xValue > maxThreshold && joyMoved == false) {
     xJoyState = 1;
     joyMoved = true;
-  }
-  else if (xValue < minThreshold && joyMoved == false) {
+  } else if (xValue < minThreshold && joyMoved == false) {
     xJoyState = -1;
-    yJoyState = 0;
     joyMoved = true;
-  }    
+  }
 
   if (yValue > maxThreshold && joyMoved == false) {
     yJoyState = 1;
     joyMoved = true;
-  }
-  else if (yValue < minThreshold && joyMoved == false) {
+  } else if (yValue < minThreshold && joyMoved == false) {
     yJoyState = -1;
     joyMoved = true;
   }
 }
 
-void blinkLed(int currentLedPin) {
+
+void toggleLed() {
+  displayLedStates[currentLedPin] = !displayLedStates[currentLedPin];
+}
+
+
+int nextPinToMove() {
+
+  getjoyState();
+  int ledToGo = currentLedPin;
+
+  if (xJoyState == -1 && pinToGo[currentLedPin][DOWN] != NA) ledToGo = pinToGo[currentLedPin][DOWN];
+  else if (xJoyState == 1 && pinToGo[currentLedPin][UP] != NA) ledToGo = pinToGo[currentLedPin][UP];
+  if (yJoyState == -1 && pinToGo[currentLedPin][RIGHT] != NA) ledToGo = pinToGo[currentLedPin][RIGHT];
+  else if (yJoyState == 1 && pinToGo[currentLedPin][LEFT] != NA) ledToGo = pinToGo[currentLedPin][LEFT];
+
+  return ledToGo;
+}
+
+
+void ledLockIn() {
+  displayLedStates[currentLedPin] = currentLedState;
+}
+
+
+void reset() {
+  currentState = 1;
+  for (int i = pinA; i <= pinDP; i++) {
+    displayLedStates[i] = LOW;
+  }
+  currentLedPin = pinDP;
+  buttonAction = NO_PRESS;
+}
+
+
+int manageButtonPressing() {
+
+  reading = digitalRead(pinSW);
+
+  if (reading != lastReading) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (buttonState != reading) {
+      buttonState = reading;
+      if (buttonState == LOW)
+        pressingTime = millis();
+      else if (millis() - pressingTime < LONG_PRESS_DURATION)
+        return SHORT_PRESS;
+
+    } else if (buttonState == LOW && millis() - pressingTime >= LONG_PRESS_DURATION)
+      return LONG_PRESS;
+  }
+
+  lastReading = reading;
+
+  return NO_PRESS;
+}
+
+
+void blinkCurrentLed() {
 
   if (millis() - lastBlinkTime > BLINKING_TIME) {
     lastBlinkTime = millis();
     currentLedState = !currentLedState;
   }
 
-  digitalWrite(segments[currentLedPin], currentLedState);
+  digitalWrite(currentLedPin, currentLedState);
 }
+
 
 void setDisplayLights() {
   for (int i = 0; i < segSize; i++) {
-    digitalWrite(segments[i], displayLedStates[i]);
+    digitalWrite(segments[i], displayLedStates[segments[i]]);
   }
-}
-
-void setup() {
-
-  for (int i = 0; i < segSize; i++) {
-    pinMode(segments[i], OUTPUT);
-  }
-  pinMode(pinSW, INPUT_PULLUP);
-  // attachInterrupt(digitalPinToInterrupt(pinSW), buttonIsPressed, CHANGE);
-  Serial.begin(9600);
 }
 
 
 void loop() {
-  buttonState = getButtonState();
-    
-  getjoyState();
-  if (xJoyState == -1 && pinToGo[currentLedPin][DOWN] != -1) currentLedPin = pinToGo[currentLedPin][DOWN];
-  else if (xJoyState == 1 && pinToGo[currentLedPin][UP] != -1) currentLedPin = pinToGo[currentLedPin][UP];
-  if (yJoyState == -1 && pinToGo[currentLedPin][RIGHT] != -1) currentLedPin = pinToGo[currentLedPin][RIGHT];
-  else if (yJoyState == 1 && pinToGo[currentLedPin][LEFT] != -1) currentLedPin = pinToGo[currentLedPin][LEFT];
-  setDisplayLights();
-  blinkLed(currentLedPin);
-  Serial.println(buttonValue);
-}
+  switch (currentState) {
 
-void buttonIsPressed() {
-  reading = !reading;
+    case LED_MOVING:
+      setDisplayLights();
+      blinkCurrentLed();
+
+      buttonAction = manageButtonPressing();
+
+      if (buttonAction == LONG_PRESS)
+        reset();
+
+      else if (buttonAction == SHORT_PRESS) {
+        ledLockIn();
+        currentState = 2;
+      }
+      currentLedPin = nextPinToMove();
+      break;
+
+    case LED_LOCKED_IN:
+      getjoyState();
+      if (yJoyState == -1) toggleLed();
+      digitalWrite(currentLedPin, displayLedStates[currentLedPin]);
+      buttonAction = manageButtonPressing();
+      if (buttonAction == SHORT_PRESS)
+        currentState = 1;
+      break;
+  }
 }
