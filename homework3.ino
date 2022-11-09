@@ -42,7 +42,7 @@ int xJoyState, yJoyState = 0;
 int xValue, yValue = 500;
 bool joyMoved = false;
 
-int currentLedPin = pinA;
+int currentLedPin = pinDP;
 byte currentLedState = LOW;
 
 byte buttonState = HIGH;
@@ -116,6 +116,8 @@ void getjoyState() {
 
 void toggleLed() {
   displayLedStates[currentLedPin] = !displayLedStates[currentLedPin];
+  
+  digitalWrite(currentLedPin, displayLedStates[currentLedPin]);
 }
 
 
@@ -130,11 +132,6 @@ int nextPinToMove() {
   else if (yJoyState == 1 && pinToGo[currentLedPin][LEFT] != NA) ledToGo = pinToGo[currentLedPin][LEFT];
 
   return ledToGo;
-}
-
-
-void ledLockIn() {
-  displayLedStates[currentLedPin] = currentLedState;
 }
 
 
@@ -187,7 +184,10 @@ void blinkCurrentLed() {
 
 void setDisplayLights() {
   for (int i = 0; i < segSize; i++) {
-    digitalWrite(segments[i], displayLedStates[segments[i]]);
+    if (segments[i] != currentLedPin)
+      digitalWrite(segments[i], displayLedStates[segments[i]]);
+    else
+     digitalWrite(segments[i], LOW);
   }
 }
 
@@ -205,7 +205,7 @@ void loop() {
         reset();
 
       else if (buttonAction == SHORT_PRESS) {
-        ledLockIn();
+        digitalWrite(currentLedPin, displayLedStates[currentLedPin]);
         currentState = 2;
       }
       currentLedPin = nextPinToMove();
@@ -214,7 +214,6 @@ void loop() {
     case LED_LOCKED_IN:
       getjoyState();
       if (yJoyState == -1) toggleLed();
-      digitalWrite(currentLedPin, displayLedStates[currentLedPin]);
       buttonAction = manageButtonPressing();
       if (buttonAction == SHORT_PRESS)
         currentState = 1;
