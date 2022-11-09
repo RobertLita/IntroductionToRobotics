@@ -50,3 +50,26 @@
 <hr>
 
 ## Homework #3
+#### Draw on a 7-segment display using a joystick. It should have 2 states:
+  - *State 1*: Current position blinking. Can use the joystick to move from one position to neighbors.   
+    - **Short pressing** the button toggles state 2.  
+    - **Long pressing** the button in state 1 resets the entire display.
+  - *State 2*: The current segment stops blinking, adopting the state of the segment before selection. With joystick axis, led can be toggled ON/OFF.
+
+<br>
+
+![Homework #3 image](assets/homework3.jpg)
+
+<div align="center">
+  <h3>
+    <a href="https://youtu.be/qW21jHZT9xs">
+      ▶️ Click here for video
+    </a>
+  </h3>
+</div>
+
+<br>
+
+<hr>
+
+## Homework #4
