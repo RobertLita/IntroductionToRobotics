@@ -27,7 +27,7 @@
 <hr>
 
 ## Homework #2
-#### Build the traffic lights for a crosswalk. It should have 4 states:
+#### Build the traffic lights for a crosswalk 🚥. It should have 4 states:
   - *State 1*: Cars crossing (green for cars, red for pedestrians) -> Duration: indefinite, changed by pressing the button. 
   - *State 2*: Cars stopping (yellow for cars, red for pedestrians) -> Duration: 3s.
   - *State 3*: Pedestrians crossing (red for cars, green & beeping sound for pedestrians) -> Duration: 8s.
@@ -50,7 +50,7 @@
 <hr>
 
 ## Homework #3
-#### Draw on a 7-segment display using a joystick. It should have 2 states:
+#### Draw on a 7-segment display using a joystick 🕹️. It should have 2 states:
   - *State 1*: Current position blinking. Can use the joystick to move from one position to neighbors.   
     - **Short pressing** the button toggles state 2.  
     - **Long pressing** the button in state 1 resets the entire display.
