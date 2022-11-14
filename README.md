@@ -73,3 +73,25 @@
 <hr>
 
 ## Homework #4
+
+#### Controlling a 4 digit 7-segment display using a joystick 🕹️. It should have 2 states:
+  - *State 1*: Use the joystick axis to cycle through the 4 digits. A blinking decimal point showsthe current digit position. 
+    - **Short pressing** the button, current segment locked in & toggled state 2.  
+    - **Long pressing** the button in state 1 resets the entire display.
+  - *State 2*: the decimal point stays always on. With joystick axis, you can increment or decrement the number on the current  digit IN HEX.
+
+<br>
+
+![Homework #4 image](assets/homework4.jpg)
+
+<div align="center">
+  <h3>
+    <a href="https://youtu.be/mZiB5XQWV4E">
+      ▶️ Click here for video
+    </a>
+  </h3>
+</div>
+
+<br>
+
+<hr>
