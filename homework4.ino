@@ -45,6 +45,7 @@ bool joyMoved = false;
 
 int currentDisplayIndex = 0;
 byte dpState[] = {0, 0, 0, 0};
+int displayValue[] = {0, 0, 0, 0};
 
 byte buttonState = HIGH;
 byte reading = HIGH;
@@ -53,17 +54,12 @@ int buttonAction = NO_PRESS;
 
 int currentState = 1;
 
-int displayValue[] = {0, 0, 0, 0};
-
 const byte regSize = 8; // 1 byte aka 8 bits
-
 int displayDigits[] = {
   segD1, segD2, segD3, segD4
 };
 
 const int encodingsNumber = 16;
-
-
 int byteEncodings[encodingsNumber] = {
 //A B C D E F G DP 
   B11111100, // 0 
@@ -86,8 +82,6 @@ int byteEncodings[encodingsNumber] = {
 
 const int displayCount = 4;
 
-int registers[regSize];
-
 void setup() {
 
   pinMode(latchPin, OUTPUT);
@@ -101,6 +95,7 @@ void setup() {
   pinMode(pinSW, INPUT_PULLUP);
   Serial.begin(9600);
 }
+
 
 void writeReg(int encoding) {
   digitalWrite(latchPin, LOW);
@@ -117,12 +112,6 @@ void activateDisplay(int digit) {
   digitalWrite(displayDigits[digit], LOW);
 }
 
-void deactivateDisplay() {
-  for(int i = 0; i < displayCount; i++) {
-    digitalWrite(displayDigits[i], HIGH);
-  }
-}
-
 
 void writeAllDigits() {
   for(int i = 0; i < displayCount; i++) {
@@ -130,9 +119,10 @@ void writeAllDigits() {
     activateDisplay(i);
     delay(5);
   }
-  digitalWrite(displayDigits[displayCount - 1], HIGH);
   
+  digitalWrite(displayDigits[displayCount - 1], HIGH);
 }
+
 
 void getjoyState() {
   xValue = analogRead(pinX);
@@ -161,13 +151,6 @@ void getjoyState() {
     joyMoved = true;
   }
 }
-
-
-// void toggleLed() {
-//   displayLedStates[currentLedPin] = !displayLedStates[currentLedPin];
-  
-//   digitalWrite(currentLedPin, displayLedStates[currentLedPin]);
-// }
 
 
 int nextDisplayToMove() {
@@ -228,6 +211,7 @@ void blinkDP() {
   }
 }
 
+
 void changeDigit(int direction) {
   if (direction == UP) {
     if (displayValue[currentDisplayIndex] + 1 < encodingsNumber)
@@ -243,28 +227,32 @@ void changeDigit(int direction) {
   }
 }
 
+void lockIn() {
+  dpState[currentDisplayIndex] = 1;
+}
+
 
 void loop() {
   
   writeAllDigits();
+
   switch (currentState) {
-    
     case MOVING_THROUGH: 
       blinkDP();
       buttonAction = manageButtonPressing();
-      Serial.println(currentDisplayIndex);
       if (buttonAction == LONG_PRESS)
         reset();
 
       else if (buttonAction == SHORT_PRESS) {
         currentState = 2;
       }
+
       else
         currentDisplayIndex = nextDisplayToMove();
       break;
 
     case DISPLAY_LOCKED_IN:
-      dpState[currentDisplayIndex] = 1;
+      lockIn();
       getjoyState();
       if (yJoyState != 0) changeDigit(yJoyState);
       buttonAction = manageButtonPressing();
