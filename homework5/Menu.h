@@ -469,7 +469,7 @@ void menuLoop() {
     if (buttonState == BUTTON_PRESSED) {
       gameEnded();
       buildHighscores();
-      saveSettingsInStorage();
+      saveHighscoresInStorage();
       currentMenuState = 8;
     }
   }
