@@ -4,12 +4,12 @@
 
 struct PlayerScore {
   char name[7];
-  char score[8];
+  short score;
 };
 
 
 struct Settings {
-  char name[6];
+  char name[7];
   byte difficulty;
   byte lcdContrast;
   byte lcdBrightness;

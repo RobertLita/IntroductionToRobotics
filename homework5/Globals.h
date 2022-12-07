@@ -46,8 +46,6 @@ const short maxThreshold = 800;
 const short stillMinThreshold = 400;
 const short stillMaxThreshold = 600;
 
-
-
 // PINS //
 const int lcdBrightnessPin = 3;
 const int lcdContrastPin = 11;
@@ -60,5 +58,14 @@ const byte d4 = 7;
 const byte d5 = 6;
 const byte d6 = 5;
 const byte d7 = 4;
+const byte dinPin = 12;
+const byte clockPin = 13;
+const byte loadPin = 10;
+
+
+// MATRIX
+#define MATRIX_SIZE 8
+#define MIN_MATRIX_BRIGHTNESS_VALUE 0
+#define MAX_MATRIX_BRIGHTNESS_VALUE 15
 
 #endif Globals

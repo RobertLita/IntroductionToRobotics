@@ -6,6 +6,8 @@
 #include "LCDSymbols.h"
 #include "StorageManager.h"
 #include "Globals.h"
+#include "Matrix.h"
+#include "Game.h"
 
 unsigned long lastDebounceTime;
 
@@ -33,10 +35,12 @@ unsigned long long hfTime = 0;
 
 bool joyMoved = false;
 bool shouldRefresh = true;
+bool matrixOn = false;
 short yJoyState = 0;
 short xJoyState = 0;
 
 void buildHighscores();
+void resetHighscores();
 
 void menuSetup() {
   Serial.begin(9600);
@@ -52,6 +56,7 @@ void menuSetup() {
   loadAllFromStorage();
   analogWrite(lcdBrightnessPin, map(settings.lcdBrightness, 1, 10, MIN_LCD_BRIGHTNESS_VALUE, MAX_LCD_BRIGHTNESS_VALUE));
   analogWrite(lcdContrastPin, map(settings.lcdContrast, 1, 10, MIN_LCD_CONTRAST_VALUE, MAX_LCD_CONTRAST_VALUE));
+  setMatrixBrightness(settings.matrixBrightness);
 
   buildHighscores();
 }
@@ -152,6 +157,19 @@ void displayItems(byte& index, byte listLen, String itemList[], byte step = 1, b
   }
 }
 
+void displayMenuIcon(const byte icon[]) {
+  if (!matrixOn) {
+    displayIconOnMatrix(icon);
+    matrixOn = true;
+  }
+}
+
+void eraseMatrix() {
+  if (matrixOn) {
+    turnOffMatrix();
+    matrixOn = false;
+  }
+}
 
 void goToState(byte& currentState, byte nextState) {
   currentState = nextState;
@@ -207,7 +225,7 @@ void displaySounds() {
 void resetHighscores() {
   for (byte i = 0; i < 5; i++) {
     strcpy(highscores[i].name, "NoName");
-    strcpy(highscores[i].score, "      0");
+    highscores[i].score = 0;
   }
   saveHighscoresInStorage();
   goToState(currentMenuState, 5);
@@ -215,12 +233,40 @@ void resetHighscores() {
 
 
 void buildHighscores() {
-  for (byte i = 1; i <= 5; i++)
-    hsItems[i] = hsItems[i] + highscores[i - 1].name + highscores[i - 1].score;
+  for (byte i = 1; i <= 5; i++) {
+    short sscore = highscores[i - 1].score;
+    byte digitNr = 0;
+    if (sscore == 0) digitNr = 1;
+    while (sscore != 0) {
+      digitNr++;
+      sscore /= 10;
+    }
+    String score = "";
+    for (byte j = 1; j <= 7 - digitNr; j++)
+      score += ' ';
+    char numstr[5];  // enough to hold all numbers up to 64-bits
+    sprintf(numstr, "%d", highscores[i - 1].score);
+    score += numstr;
+    String id(char(i + 48));
+    id += '.';
+    hsItems[i] = id + highscores[i - 1].name + score;
+  }
 }
 
 
-void displaySlider(byte barsNr, byte& settingToUpdate, byte modifierPin = 0, byte minIntervalValue = 0, byte maxIntervalValue = 0) {
+void updateInGameScreen() {
+  lcd.clear();
+  printCentered("Playing...", 0);
+  char numstr[5];  // enough to hold all numbers up to 64-bits
+  char message[17] = "Score:  ";
+  short food = getPoints();
+  sprintf(numstr, "%d", food);
+  strcat(message, numstr);
+  printCentered(message, 1);
+  shouldRefresh = false;
+}
+
+void displaySlider(byte barsNr, byte& settingToUpdate, short modifierPin = 0, byte minIntervalValue = 0, byte maxIntervalValue = 0) {
 
   char bar = 0xff;
   String content = "-";
@@ -246,11 +292,12 @@ void displaySlider(byte barsNr, byte& settingToUpdate, byte modifierPin = 0, byt
         content[barIndex] = ' ';
         barIndex--;
       }
-
       printCentered(content, 0);
-      if (modifierPin != 0) {
-        byte value = map(barIndex, 1, barsNr, minIntervalValue, maxIntervalValue);
+      byte value = map(barIndex, 1, barsNr, minIntervalValue, maxIntervalValue);
+      if (modifierPin > 0) {
         analogWrite(modifierPin, value);
+      } else if (modifierPin == -1) {
+        setMatrixBrightness(value);
       }
       delay(5);
     }
@@ -312,12 +359,10 @@ void displaySetName() {
   goToState(currentMenuState, 5);
 }
 
-
 void menuLoop() {
 
   getButtonState();
 
-  // Serial.println(highscores[4].name);
   if (currentMenuState == 1)
     displayWelcome();
 
@@ -341,27 +386,33 @@ void menuLoop() {
     switch (selectedMenuItem) {
 
       case START_GAME:
-        //startGame()
+        gameSetup();
+        matrixOn = true;
+        goToState(currentMenuState, 9);
         break;
 
       case HIGHSCORES:
+        displayMenuIcon(highscoreIcon);
         displayItems(selectedHighscoresItem, 7, hsItems);
         if (selectedHighscoresItem == 6)
           checkButtonPressing(currentMenuState, 8);
         break;
 
       case SETTINGS:
+        displayMenuIcon(settingsIcon);
         displayItems(selectedSettingsItem, 9, settingsItems, 1, true);
         checkButtonPressing(currentMenuState, 7);
         break;
 
       case ABOUT:
+        displayMenuIcon(aboutIcon);
         displayItems(selectedAboutItem, 7, aboutItems, 2);
         if (selectedAboutItem == 6)
           checkButtonPressing(currentMenuState, 8);
         break;
 
       case HOW_TO_PLAY:
+        displayMenuIcon(howToPlayIcon);
         displayItems(selectedHTPItem, 5, htpItems, 1);
         if (selectedHTPItem == 4)
           checkButtonPressing(currentMenuState, 8);
@@ -386,7 +437,7 @@ void menuLoop() {
         break;
 
       case MATRIX_LIGHT:
-        displaySlider(10, settings.matrixBrightness);
+        displaySlider(12, settings.matrixBrightness, -1, MIN_MATRIX_BRIGHTNESS_VALUE, MAX_MATRIX_BRIGHTNESS_VALUE);
         break;
 
       case SOUNDS:
@@ -398,15 +449,29 @@ void menuLoop() {
         break;
 
       case BACK_TO_MENU:
-        goToState(currentMenuState, 4);
-        selectedSettingsItem = 1;
+        goToState(currentMenuState, 8);
         break;
     }
   else if (currentMenuState == 8) {
     goToState(currentMenuState, 4);
+    eraseMatrix();
+    selectedSettingsItem = 1;
     selectedAboutItem = 1;
     selectedHighscoresItem = 1;
     selectedHTPItem = 1;
+    shouldRefresh = true;
+  } else if (currentMenuState == 9) {
+    gameLoop(shouldRefresh);
+    getButtonState();
+    if (shouldRefresh) {
+      updateInGameScreen();
+    }
+    if (buttonState == BUTTON_PRESSED) {
+      gameEnded();
+      buildHighscores();
+      saveSettingsInStorage();
+      currentMenuState = 8;
+    }
   }
 }
 
