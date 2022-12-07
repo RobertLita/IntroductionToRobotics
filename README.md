@@ -97,7 +97,7 @@
 ## Homework #5
 
 #### Building a menu & simple game 🎮. 
-  - *Menu*: Highscores, Settings (Enter your name, change lcd & matrix brightness, lcd contrast, sounds), About, How to Play. All preferences are saved to Arduino's internal memory.
+  - *Menu*: Highscores, Settings (enter your name, change lcd & matrix brightness, lcd contrast, sounds), About, How to Play. All preferences are saved to Arduino's internal memory. ( buzzer is missing tho :/ )
   - *Game*: A simple game when you must eat a random point from map.
 ##### *This homework is a preparation for the big project :D*
 <br>
